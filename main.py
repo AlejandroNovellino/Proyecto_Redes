@@ -33,59 +33,38 @@ def main():
     args = argParser.parse_args()
     player_number = args.player_number
 
-    print("----------------------------------Init----------------------------------")
     # Ports to be used
     # Port to communicate between tow computers
-    port_COM_A = None  # Port to write
-    port_COM_B = None  # Port to read
+    port_COM = None  # Port to communicate
     # Initialize the ports and the io wrappers
     if player_number == 1:
         # Player is number 1
-        # Port A to write
-        port_COM_A = serial.Serial(port="COM1", timeout=0)
-        # Port B to read
-        port_COM_B = serial.Serial(port="COM2", timeout=0)
+        port_COM = serial.Serial(port="COM1", timeout=0)
 
     elif player_number == 2:
         # Player is number 2
-        # Port A to write
-        port_COM_A = serial.Serial(port="COM2", timeout=0)
-        # Port B to read
-        port_COM_B = serial.Serial(port="COM1", timeout=0)
+        port_COM = serial.Serial(port="COM2", timeout=0)
 
-    # Test the ports
-
-    # Write to the port
-    test_dict = {"info": "Test information", "player": "Hello"}
-    print(f"Valor del diccionario: {json.dumps(test_dict)}")
-
-    # THIS IS HOW WE ARE WORKING
-    # port_COM_A.write(json.dumps(test_dict).encode("ascii"))
-    port_COM_A.write("Hola desde el puerto A".encode("utf-8"))
-    message = port_COM_B.readline()
-    print(f"Mensaje leido en el puerto B: {message.decode('utf-8')}")
-
-    port_COM_B.write("Hola desde el puerto B".encode("utf-8"))
-    message = port_COM_A.readline()
-    print(f"Mensaje leido en el puerto A: {message.decode('utf-8')}")
+    print("----------------------------------Init----------------------------------")
+    print("Informacion de instancia:")
+    print(f"     - Numero del jugador: {player_number}")
+    print(f"     - Puerto a utilizar: {port_COM.port}")
 
     # Game logic
     # ------------------------------------------------------------------
 
     # Variables
-    domino = None
-    game = None
+    game = None  # Game to be played
 
     # Set the game
     if player_number == 1:
         # Player 1 so the game is created be him
-        domino = dominoes.Domino(6, 6)
-        game = dominoes.Game.new(starting_domino=domino)
+        game = dominoes.Game.new(starting_player=0)
         # Write the game to the output port
-        port_COM_A.write(json.dumps(game).encode("utf-8"))
+        port_COM.write(json.dumps(game.__dict__).encode("utf-8"))
     else:
         # Player 2 so the game comes from player 1
-        game = json.load(port_COM_B.readline().decode("utf-8"))
+        game = dominoes.game.Game(*json.load(port_COM.readline().decode("utf-8")))
 
     # Game
     while not game.result:
@@ -116,12 +95,12 @@ def main():
                 game.make_move(*game.valid_moves[0])
 
             # Write the new game state to the output port
-            port_COM_A.write(json.dumps(game).encode("utf-8"))
+            port_COM.write(json.dumps(game.__dict__).encode("utf-8"))
 
         # Verify if the port have information to update the state of the game
-        if port_COM_B.in_waiting():
+        if port_COM.in_waiting():
             # Update the game by the state in the port B
-            game = json.load(port_COM_B.readline().decode("utf-8"))
+            game = dominoes.game.Game(*json.load(port_COM.readline().decode("utf-8")))
 
     # Game finished print the result
     print(game.result)
@@ -129,8 +108,8 @@ def main():
 
     # Close the ports
     try:
-        port_COM_A.close()
-        port_COM_B.close()
+        port_COM.close()
+        port_COM.close()
         print("Puertos cerrados")
     except:
         print("Los puertos no pudieron ser cerrados")
