@@ -23,11 +23,6 @@ port_COM_H = serial.Serial(port="COM8", baudrate=115200, timeout=0.1, write_time
 # Puerto A escribe al bus
 port_COM_A.write("Hola desde el puerto A".encode("utf-8"))
 time.sleep(0.15)
-
-port_COM_B.reset_input_buffer()
-port_COM_B.reset_output_buffer()
-
-
 # Puerto B lee del bus
 message = port_COM_B.readline()
 print(f"Mensaje leido desde el puerto B: {message.decode('utf-8')}")

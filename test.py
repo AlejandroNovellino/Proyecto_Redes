@@ -11,11 +11,9 @@ import pickle
 import dominoes
 
 # possible strategies for each of the players
-PLAYER_SETTINGS = [
-    ("Human", None),
-    ("AI: random", dominoes.players.random),
-    ("AI: omniscient", dominoes.players.omniscient()),
-]
+# Team composition:
+#   team 0: players 0 and 2
+#   team 1: players 1 and 3
 
 
 def validated_input(prompt, validate_and_transform, error_message):
@@ -164,7 +162,7 @@ game = None  # Game to be played
 # Set the game
 if player_number == 0:
     # Player 1 so the game is created be him
-    series = dominoes.Series(target_score=100, starting_domino=None)
+    series = dominoes.Series(target_score=50, starting_domino=None)
     game = series.games[0]
     # Write the game to the port, so the next player can initialize the game
     out_port_COM.write(pickle.dumps(series))
@@ -295,7 +293,12 @@ while game is not None:
     print(game.result)
     print(game)
     # Select the new game to continue the series
-    game = series.next_game()
+    try:
+        # Test if the game can be created
+        game = series.next_game()
+    except:
+        # Can not be created so series have finished
+        break
     print(
         "------------------------------------------------------------------------------"
     )
@@ -320,6 +323,10 @@ while game is not None:
     # Reset buffer of the ports
     in_port_COM.reset_input_buffer()
     in_port_COM.reset_output_buffer()
+
+# Once the series has ended, print out the winning team
+winning_team, _ = max(enumerate(series.scores), key=lambda i_score: i_score[1])
+print("Team {} wins!".format(winning_team))
 
 # Close the ports
 try:
